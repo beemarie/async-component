@@ -81,7 +81,6 @@ func TestConsumeEvent(t *testing.T) {
 }
 
 func getRequestString(theReq *http.Request) string {
-
 	// write the request into b
 	var b = &bytes.Buffer{}
 	if err := theReq.Write(b); err != nil {

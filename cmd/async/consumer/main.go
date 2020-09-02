@@ -16,8 +16,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -33,25 +31,14 @@ type Request struct {
 }
 
 func consumeEvent(event cloudevents.Event) error {
-
 	data := &Request{}
-	// TODO: how can we get the actual data we need without manually accessing this string?
-	// data is in format "["data":"therequestdata"]", unable to unmarshal top level array
-	reqData := string(event.Data()[13 : len(event.Data())-2])
-	decodedByteArr, decodeErr := base64.StdEncoding.DecodeString(reqData)
-	if decodeErr != nil {
-		log.Fatal("error:", decodeErr)
-	}
-	// TODO: check for errors here
-	err := json.Unmarshal(decodedByteArr, data)
-	if err != nil {
-		fmt.Println("Error unmarshalling json")
-		return err
+	if err := event.DataAs(&data); err != nil {
+		return fmt.Errorf("decode event: %w", err)
 	}
 
 	r := bufio.NewReader(strings.NewReader(data.Req))
 	req, err := http.ReadRequest(r) // deserialize request
-	if err != nil { 
+	if err != nil {
 		fmt.Println("Problem reading request: ", err)
 		return err
 	}
