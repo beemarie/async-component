@@ -116,8 +116,6 @@ func writeToRedis(ctx context.Context, s EnvInfo, reqJSON []byte, id string) (er
 		Addrs: []string{s.RedisAddress},
 	}
 	client := redis.NewUniversalClient(opts)
-	// TODO: maybe there's a different way to format the stream addition to prevent
-	// parsing issues in consumer?
 	strCMD := client.XAdd(ctx, &redis.XAddArgs{
 		Stream: s.StreamName,
 		Values: map[string]interface{}{
