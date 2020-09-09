@@ -1,11 +1,18 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/go-redis/redis/v8"
 )
+
+type FakeRedis struct {
+	client redis.Cmdable
+}
 
 func TestAsyncRequestHeader(t *testing.T) {
 	testserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +34,7 @@ func TestAsyncRequestHeader(t *testing.T) {
 		method:           "GET",
 		largeBody:        false,
 		contentLengthSet: false,
-		returncode:       500, //TODO: how can we test 202 return without standing up redis?
+		returncode:       202,
 	}, {
 		name:             "non async get request",
 		async:            false,
@@ -52,6 +59,11 @@ func TestAsyncRequestHeader(t *testing.T) {
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			env = EnvInfo{
+				StreamName:   "mystream",
+				RedisAddress: "address",
+			}
+			setupRedis()
 			request, _ := http.NewRequest(http.MethodGet, testserver.URL, nil)
 			if test.method == "POST" {
 				body := strings.NewReader(`{"body":"this is a body"}`)
@@ -79,4 +91,19 @@ func TestAsyncRequestHeader(t *testing.T) {
 			}
 		})
 	}
+}
+
+func setupRedis() {
+	// set up redis client
+	opts := &redis.UniversalOptions{
+		Addrs: []string{env.RedisAddress},
+	}
+	theclient := redis.NewUniversalClient(opts)
+	rc = &FakeRedis{
+		client: theclient,
+	}
+}
+
+func (fr *FakeRedis) write(ctx context.Context, s EnvInfo, reqJSON []byte, id string) (err error) {
+	return // no need to actually write to redis stream for our test case.
 }

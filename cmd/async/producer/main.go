@@ -28,11 +28,37 @@ type RequestData struct {
 	Request string //`json:"request"`
 }
 
+type RedisInterface interface {
+	write(ctx context.Context, s EnvInfo, reqJSON []byte, id string) error
+}
+
+type MyRedis struct {
+	client redis.Cmdable
+}
+
 // request size limit in bytes
 const requestSizeLimit = 6000000
 const bitsInMB = 1000000
 
+var env EnvInfo
+var rc RedisInterface
+
 func main() {
+	// get env info for queue
+	err := envconfig.Process("", &env) // BMV TODO: how can we process just a subset of env?
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	// set up redis client
+	opts := &redis.UniversalOptions{
+		Addrs: []string{env.RedisAddress},
+	}
+	theclient := redis.NewUniversalClient(opts)
+	rc = &MyRedis{
+		client: theclient,
+	}
+
 	// Start an HTTP Server
 	http.HandleFunc("/", checkHeaderAndServe)
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -95,13 +121,7 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// get env info for queue
-		var s EnvInfo
-		err = envconfig.Process("", &s) // BMV TODO: how can we process just a subset of env, providing "kafka" maybe?
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		if sourceErr := writeToRedis(r.Context(), s, reqJSON, reqData.ID); sourceErr != nil {
+		if sourceErr := rc.write(r.Context(), env, reqJSON, reqData.ID); sourceErr != nil {
 			w.WriteHeader(500)
 		} else {
 			w.WriteHeader(http.StatusAccepted)
@@ -111,12 +131,8 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func writeToRedis(ctx context.Context, s EnvInfo, reqJSON []byte, id string) (err error) {
-	opts := &redis.UniversalOptions{
-		Addrs: []string{s.RedisAddress},
-	}
-	client := redis.NewUniversalClient(opts)
-	strCMD := client.XAdd(ctx, &redis.XAddArgs{
+func (mr *MyRedis) write(ctx context.Context, s EnvInfo, reqJSON []byte, id string) (err error) {
+	strCMD := mr.client.XAdd(ctx, &redis.XAddArgs{
 		Stream: s.StreamName,
 		Values: map[string]interface{}{
 			"data": reqJSON,
