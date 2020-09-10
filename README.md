@@ -6,28 +6,6 @@ Async component for knative services
 ## Install Knative Serving & Eventing to your Cluster
 1. https://knative.dev/docs/install/any-kubernetes-cluster/
 
-<!--- 
-## Follow Instructions for Kafka or Redis
-  ### Kafka
-  1. Follow instructions for installing Kafka Source, but do not create event display service (https://knative.dev/docs/eventing/samples/kafka/source/)
-
-  ### Redis
-  1. Create Redis Operator:
-      ```
-      kubectl create -f https://raw.githubusercontent.com/spotahome/redis-operator/master/example/operator/all-redis-operator-resources.yaml
-      ```
-
-  1. Create Redis Failover:
-      ```
-      kubectl create -f config/async-requests/redis-failover.yaml
-      ```
-
-  1. Create the Redis Source. This is a placeholder source until one is availble from knative/eventing:
-      ```
-      ko apply -f config/async-requests/100-async-redis-source.yaml
-      ```
-      
--->
 
 ## Create your Demo Application. 
 
@@ -58,24 +36,17 @@ Async component for knative services
   kubectl apply -f config/async-requests/100-async-redis-source.yaml
   ```
   
-## Test the Application
+<!--## Update your vs in Istio
 1. Update your `config/async-requests/vs.yaml` file with the URL to your simple application that you deployed earlier. The update will be under `spec: hosts:`.
 
 1. Apply the `vs.yaml` file:
     ```
     kubectl apply -f config/async-requests/vs.yaml
     ``` 
-  This virtual service will route any requests to your application instead to the producer deployment. Please note that you may have to delete and redeploy the application so that the virtual service rules take precedence. This is for now.
-
-1. Curl your application. Try async & non async.
-
-    ```
-    curl myapp.default.11.112.113.14.xip.io
-    curl myapp.default.11.112.113.14.xip.io -H "Prefer: respond-async" -v
-    ```
+  This virtual service will route any requests to your application instead to the producer deployment. Please note that you may have to delete and redeploy the application so that the virtual service rules take precedence. This is for now. -->
 
 
-## If not using Istio, or vs.yaml doesn't work for you:
+## Modify /etc/hosts to simulate a DNS forward or gateway forward:
 1. Make note of your Kubernetes service external IP.
     ```
     kubectl get service producer-service
@@ -84,4 +55,12 @@ Async component for knative services
 1. For now, modify /etc/hosts to point traffic from your application (something like myapp.default.11.112.113.14) to your Kubernetes service IP (something like 11.111.111.11)
     ```
     11.111.111.11   myapp.default.11.112.113.14.xip.io
+    ```
+
+## Test your Application
+1. Curl your application. Try async & non async.
+
+    ```
+    curl myapp.default.11.112.113.14.xip.io
+    curl myapp.default.11.112.113.14.xip.io -H "Prefer: respond-async" -v
     ```
