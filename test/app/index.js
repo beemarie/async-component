@@ -14,12 +14,17 @@ const cloudant = new Cloudant({
   },
 });
 
+function sleep(ms) {
+  const seconds = ms * 1000;
+  return new Promise((resolve) => setTimeout(resolve, seconds));
+}
+
 app.get('/', async (req, res) => {
-  const servRequestTime = Date.now()
+  const servRequestTime = Date.now();
   console.log('Hello world received a request.');
   const { duration } = req.query;
   const { reqNum } = req.query;
-  await sleep(parseInt(duration));
+  await sleep(parseInt(duration, 10));
   cloudant.use('perf-test').insert({ time: servRequestTime }, reqNum).then((data) => {
     console.log(data);
   });
@@ -40,8 +45,3 @@ const port = process.env.PORT || 8080;
 app.listen(port, () => {
   console.log('Hello world listening on port', port);
 });
-
-function sleep(ms) {
-  const seconds = ms * 1000;
-  return new Promise((resolve) => setTimeout(resolve, seconds));
-}
