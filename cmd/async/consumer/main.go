@@ -43,8 +43,9 @@ func consumeEvent(event cloudevents.Event) error {
 		return err
 	}
 
+	// deserialize the request
 	r := bufio.NewReader(strings.NewReader(data.Req))
-	req, err := http.ReadRequest(r) // deserialize request
+	req, err := http.ReadRequest(r)
 	if err != nil {
 		fmt.Println("Problem reading request: ", err)
 		return err
