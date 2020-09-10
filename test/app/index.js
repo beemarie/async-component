@@ -14,10 +14,10 @@ var cloudant = new Cloudant({
 });
 
 app.get('/', async (req, res) => {
-  servRequestTime = Date.now()
+  let servRequestTime = Date.now()
   console.log('Hello world received a request.');
-  duration = req.query.duration
-  reqNum = req.query.reqNum
+  let duration = req.query.duration
+  let reqNum = req.query.reqNum
   await sleep(parseInt(duration))
   cloudant.use('perf-test').insert({ time: servRequestTime }, reqNum).then((data) => {
     console.log(data);
@@ -26,9 +26,9 @@ app.get('/', async (req, res) => {
 });
 
 app.post('/testpost', async (req, res) => {
-  servRequestTime = Date.now()
-  body = req.body
-  duration = 1
+  // let servRequestTime = Date.now()
+  let body = req.body
+  let duration = 1
   console.log('Hello world received a request, with this body: ');
   console.log(body)
   await sleep(duration)
@@ -41,6 +41,6 @@ app.listen(port, () => {
 });
 
 function sleep(ms) {
-  seconds = ms*1000
+  let seconds = ms*1000
   return new Promise(resolve => setTimeout(resolve, seconds));
 }

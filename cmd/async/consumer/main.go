@@ -67,12 +67,6 @@ func consumeEvent(event cloudevents.Event) error {
 		return err
 	}
 	defer resp.Body.Close()
-	// read body from response
-	// body, err := ioutil.ReadAll(resp.Body)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println(body)
 	return nil
 }
 
