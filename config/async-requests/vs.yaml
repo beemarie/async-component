@@ -16,6 +16,6 @@ spec:
       ignoreUriCase: true
     route:
     - destination:
-        host: producer-service.default.svc.cluster.local #producer-service #async-producer.default.52.116.240.92.xip.io # Destination service, must match service name
+        host: producer-service.default.svc.cluster.local
         port:
-            number: 80 # Post of service, must match service port
+            number: 80
