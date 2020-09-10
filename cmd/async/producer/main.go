@@ -104,8 +104,8 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 		// write the request into b
 		var b = &bytes.Buffer{}
 		if err := r.Write(b); err != nil {
-			fmt.Println("ERROR WRITING REQUEST")
-			// return err
+			fmt.Println("Error writing request ", r)
+			return
 		}
 		// translate to string then json with id.
 		reqString := b.String()
@@ -127,7 +127,6 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusAccepted)
 		}
 		// BMV TODO: do we need to close any connections or does writing the header handle this?
-
 	}
 }
 
