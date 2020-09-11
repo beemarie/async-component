@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 The Knative Authors
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -26,13 +26,13 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
 
-type Request struct {
+type request struct {
 	ID  string `json:"id"`
 	Req string `json:"request"`
 }
 
 func consumeEvent(event cloudevents.Event) error {
-	data := &Request{}
+	data := &request{}
 	datastrings := make([]string, 0)
 	event.DataAs(&datastrings)
 

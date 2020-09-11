@@ -31,7 +31,7 @@ Async component for knative services
 
 1. For the `Example` section, do not install the entire `samples` folder, as you don't need the event-display sink. Only install redis with: `kubectl apply -f samples/redis`.
 
-2. There is a .yaml file in this project describing the `RedisStreamSource`. It points to the `async-consumer` as the sink. You can apply this file now.
+2. There is a .yaml file in the `async-component` describing the `RedisStreamSource`. It points to the `async-consumer` as the sink. You can apply this file now.
   ```
   kubectl apply -f config/async-requests/100-async-redis-source.yaml
   ```

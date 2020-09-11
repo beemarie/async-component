@@ -1,3 +1,15 @@
+/*
+Copyright 2020 The Knative Authors
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package main
 
 import (
@@ -10,7 +22,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-type FakeRedis struct {
+type fakeRedis struct {
 	client redis.Cmdable
 }
 
@@ -59,7 +71,7 @@ func TestAsyncRequestHeader(t *testing.T) {
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			env = EnvInfo{
+			env = envInfo{
 				StreamName:   "mystream",
 				RedisAddress: "address",
 			}
@@ -99,11 +111,11 @@ func setupRedis() {
 		Addrs: []string{env.RedisAddress},
 	}
 	theclient := redis.NewUniversalClient(opts)
-	rc = &FakeRedis{
+	rc = &fakeRedis{
 		client: theclient,
 	}
 }
 
-func (fr *FakeRedis) write(ctx context.Context, s EnvInfo, reqJSON []byte, id string) (err error) {
+func (fr *fakeRedis) write(ctx context.Context, s envInfo, reqJSON []byte, id string) (err error) {
 	return // no need to actually write to redis stream for our test case.
 }
