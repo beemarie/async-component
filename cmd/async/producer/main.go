@@ -41,7 +41,6 @@ type requestData struct {
 	Request string //`json:"request"`
 }
 
-// wrapper with interface for testing redis
 type redisInterface interface {
 	write(ctx context.Context, s envInfo, reqJSON []byte, id string) error
 }
@@ -59,7 +58,7 @@ var rc redisInterface
 
 func main() {
 	// get env info for queue
-	err := envconfig.Process("", &env) // BMV TODO: how can we process just a subset of env?
+	err := envconfig.Process("", &env)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -92,12 +91,13 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 		isAsync = true
 	}
 	if !isAsync {
+		fmt.Println("NOT ASYNC")
 		proxy := httputil.NewSingleHostReverseProxy(target)
 		r.Host = target.Host
 		proxy.ServeHTTP(w, r)
 	} else {
-		// check for content-length if body exists
-		if r.Body != http.NoBody {
+		// check for content-length if not get request
+		if (r.Body != http.NoBody) && (r.Body != nil) {
 			contentLength := r.Header.Get("Content-Length")
 			if contentLength != "" {
 				contentLength, err := strconv.Atoi(contentLength)
@@ -111,22 +111,18 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			} else { //if content length is empty, but body exists
-				fmt.Println("r", r)
-				fmt.Println("r body", r.Body)
 				w.WriteHeader(411)
 				fmt.Fprint(w, "Content-Length required with body")
-				return
 			}
 		}
-		// serialize the request
-		// write the request into buffer
-		var buffer = &bytes.Buffer{}
-		if err := r.Write(buffer); err != nil {
+		// write the request into b
+		var buff = &bytes.Buffer{}
+		if err := r.Write(buff); err != nil {
 			fmt.Println("Error writing request ", r)
-			return
+			// return err
 		}
 		// translate to string then json with id.
-		reqString := buffer.String()
+		reqString := buff.String()
 		id := gouuidv6.NewFromTime(time.Now()).String()
 		reqData := requestData{
 			ID:      id,
@@ -145,6 +141,7 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusAccepted)
 		}
 		// TODO: do we need to close any connections or does writing the header handle this?
+
 	}
 }
 
