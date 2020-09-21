@@ -103,11 +103,11 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		// write the request into b
+		// write the request into buff
 		var buff = &bytes.Buffer{}
 		if err := r.Write(buff); err != nil {
-			fmt.Println("Error writing request ", r)
-			// return err
+			fmt.Println("Error writing request to buffer ", r)
+			return
 		}
 		// translate to string then json with id.
 		reqString := buff.String()
@@ -125,6 +125,7 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 
 		if sourceErr := rc.write(r.Context(), env, reqJSON, reqData.ID); sourceErr != nil {
 			w.WriteHeader(500)
+			fmt.Println("Error asynchronous writing request to storage ", sourceErr)
 			return
 		}
 		w.WriteHeader(http.StatusAccepted)
@@ -137,6 +138,7 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 	proxy.ServeHTTP(w, r)
 }
 
+// function to write to redis stream
 func (mr *myRedis) write(ctx context.Context, s envInfo, reqJSON []byte, id string) (err error) {
 	strCMD := mr.client.XAdd(ctx, &redis.XAddArgs{
 		Stream: s.StreamName,
