@@ -123,7 +123,6 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusAccepted)
 		return
-		// TODO: do we need to close any connections or does writing the header handle this?
 	}
 
 	// Not async, proxy the request
