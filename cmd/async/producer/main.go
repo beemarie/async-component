@@ -18,8 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -93,21 +91,17 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Prefer") == "respond-async" {
 		// if body exists,
 		if r.Body != nil {
-			body, err := ioutil.ReadAll(io.LimitReader(r.Body, int64(env.RequestSizeLimit+1))) //check for length of body up to limit
-			if err != nil {
-				fmt.Println("Error reading body: ", err)
-			}
-			if len(body) > env.RequestSizeLimit {
-				w.WriteHeader(500)
-				fmt.Fprint(w, "body size exceeds limit of ", float64(env.RequestSizeLimit)/bitsInMB, " MB")
-				return
-			}
+			r.Body = http.MaxBytesReader(w, r.Body, int64(env.RequestSizeLimit))
 		}
 		// write the request into buff
 		var buff = &bytes.Buffer{}
 		if err := r.Write(buff); err != nil {
-			fmt.Println("Error writing request to buffer ", r)
-			return
+			if err.Error() == "http: request body too large" {
+				w.WriteHeader(500)
+			} else {
+				fmt.Println("Error writing to buffer: ", err)
+				w.WriteHeader(500)
+			}
 		}
 		// translate to string then json with id.
 		reqString := buff.String()
