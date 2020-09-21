@@ -18,11 +18,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strconv"
 	"time"
 
 	"github.com/bradleypeabody/gouuidv6"
@@ -32,8 +33,9 @@ import (
 )
 
 type envInfo struct {
-	StreamName   string `envconfig:"REDIS_STREAM_NAME"`
-	RedisAddress string `envconfig:"REDIS_ADDRESS"`
+	StreamName       string `envconfig:"REDIS_STREAM_NAME"`
+	RedisAddress     string `envconfig:"REDIS_ADDRESS"`
+	RequestSizeLimit int    `envconfig:"REQUEST_SIZE_LIMIT"`
 }
 
 type requestData struct {
@@ -50,7 +52,6 @@ type myRedis struct {
 }
 
 // request size limit in bytes
-const requestSizeLimit = 6000000
 const bitsInMB = 1000000
 
 var env envInfo
@@ -78,41 +79,23 @@ func main() {
 }
 
 func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
-	var isAsync bool
 	target := &url.URL{
 		Scheme:   "http",
 		Host:     r.Host,
-		Path:     r.URL.Path,
 		RawQuery: r.URL.RawQuery,
 	}
 	// check for Prefer: respond-async header
-	asyncHeader := r.Header.Get("Prefer")
-	if asyncHeader == "respond-async" {
-		isAsync = true
-	}
-	if !isAsync {
-		fmt.Println("NOT ASYNC")
-		proxy := httputil.NewSingleHostReverseProxy(target)
-		r.Host = target.Host
-		proxy.ServeHTTP(w, r)
-	} else {
-		// check for content-length if not get request
-		if (r.Body != http.NoBody) && (r.Body != nil) {
-			contentLength := r.Header.Get("Content-Length")
-			if contentLength != "" {
-				contentLength, err := strconv.Atoi(contentLength)
-				if err != nil {
-					fmt.Println("error converting contentLength to integer", err)
-					// return err
-				}
-				if contentLength > requestSizeLimit {
-					w.WriteHeader(500)
-					fmt.Fprint(w, "Content-Length exceeds limit of ", float64(requestSizeLimit)/bitsInMB, " MB")
-					return
-				}
-			} else { //if content length is empty, but body exists
-				w.WriteHeader(411)
-				fmt.Fprint(w, "Content-Length required with body")
+	if r.Header.Get("Prefer") == "respond-async" {
+		// if body exists,
+		if r.Body != nil {
+			body, err := ioutil.ReadAll(io.LimitReader(r.Body, int64(env.RequestSizeLimit+1))) //check for length of body up to limit
+			if err != nil {
+				fmt.Println("Error reading body: ", err)
+			}
+			if len(body) > env.RequestSizeLimit {
+				w.WriteHeader(500)
+				fmt.Fprint(w, "body size exceeds limit of ", float64(env.RequestSizeLimit)/bitsInMB, " MB")
+				return
 			}
 		}
 		// write the request into b
@@ -141,8 +124,11 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusAccepted)
 		}
 		// TODO: do we need to close any connections or does writing the header handle this?
-
 	}
+
+	// Not async, proxy the request
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy.ServeHTTP(w, r)
 }
 
 func (mr *myRedis) write(ctx context.Context, s envInfo, reqJSON []byte, id string) (err error) {

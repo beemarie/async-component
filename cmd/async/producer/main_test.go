@@ -41,52 +41,52 @@ func TestAsyncRequestHeader(t *testing.T) {
 		contentLengthSet bool
 		returncode       int
 	}{{
-		name:             "async get request",
-		async:            true,
-		method:           "GET",
-		largeBody:        false,
-		contentLengthSet: false,
-		returncode:       202,
+		name:       "async get request",
+		async:      true,
+		method:     "GET",
+		largeBody:  false,
+		returncode: 202,
 	}, {
-		name:             "non async get request",
-		async:            false,
-		method:           "GET",
-		largeBody:        false,
-		contentLengthSet: false,
-		returncode:       200,
+		name:       "non async get request",
+		async:      false,
+		method:     "GET",
+		largeBody:  false,
+		returncode: 200,
 	}, {
-		name:             "async post request with too large payload",
-		async:            true,
-		method:           "POST",
-		largeBody:        true,
-		contentLengthSet: true,
-		returncode:       500,
+		name:       "non async post request",
+		async:      false,
+		method:     "POST",
+		largeBody:  false,
+		returncode: 200,
 	}, {
-		name:             "async post request with no content-length set",
-		async:            true,
-		method:           "POST",
-		largeBody:        false,
-		contentLengthSet: false,
-		returncode:       411,
-	}}
+		name:       "async post request with too large payload",
+		async:      true,
+		method:     "POST",
+		largeBody:  true,
+		returncode: 500,
+	}, {
+		name:       "async post request with smaller than limit payload",
+		async:      true,
+		method:     "POST",
+		largeBody:  false,
+		returncode: 202,
+	},
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			env = envInfo{
-				StreamName:   "mystream",
-				RedisAddress: "address",
+				StreamName:       "mystream",
+				RedisAddress:     "address",
+				RequestSizeLimit: 25,
 			}
 			setupRedis()
 			request, _ := http.NewRequest(http.MethodGet, testserver.URL, nil)
 			if test.method == "POST" {
 				body := strings.NewReader(`{"body":"this is a body"}`)
-				request, _ = http.NewRequest(http.MethodPost, testserver.URL, body)
-				if test.contentLengthSet {
-					if test.largeBody {
-						request.Header.Set("Content-Length", "70000000")
-					} else {
-						request.Header.Set("Content-Length", "1000")
-					}
+				if test.largeBody == true {
+					body = strings.NewReader(`{"body":"this is a larger body"}`)
 				}
+				request, _ = http.NewRequest(http.MethodPost, testserver.URL, body)
 			}
 			if test.async {
 				request.Header.Set("Prefer", "respond-async")
