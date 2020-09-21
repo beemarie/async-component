@@ -78,6 +78,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+// check for asynchronous header
 func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 	target := &url.URL{
 		Scheme:   "http",
@@ -120,9 +121,10 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 
 		if sourceErr := rc.write(r.Context(), env, reqJSON, reqData.ID); sourceErr != nil {
 			w.WriteHeader(500)
-		} else {
-			w.WriteHeader(http.StatusAccepted)
+			return
 		}
+		w.WriteHeader(http.StatusAccepted)
+		return
 		// TODO: do we need to close any connections or does writing the header handle this?
 	}
 
