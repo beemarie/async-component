@@ -78,7 +78,11 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-// check for asynchronous header
+/*
+check for a Prefer: respond-async header.
+if async is preferred, then write request to redis.
+if symnchronous is preferred, then proxy the request.
+*/
 func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 	target := &url.URL{
 		Scheme:   "http",
