@@ -66,9 +66,8 @@ func main() {
 	opts := &redis.UniversalOptions{
 		Addrs: []string{env.RedisAddress},
 	}
-	theclient := redis.NewUniversalClient(opts)
 	rc = &myRedis{
-		client: theclient,
+		client: redis.NewUniversalClient(opts),
 	}
 
 	// Start an HTTP Server
@@ -89,7 +88,7 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 	}
 	// check for Prefer: respond-async header
 	if r.Header.Get("Prefer") == "respond-async" {
-		// if body exists,
+		// if request body exists, check that length doesn't exceed limit
 		if r.Body != nil {
 			r.Body = http.MaxBytesReader(w, r.Body, int64(env.RequestSizeLimit))
 		}
@@ -116,10 +115,10 @@ func checkHeaderAndServe(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "Failed to marshal request: ", err)
 			return
 		}
-
-		if sourceErr := rc.write(r.Context(), env, reqJSON, reqData.ID); sourceErr != nil {
+		// write the request information to the storage
+		if writeErr := rc.write(r.Context(), env, reqJSON, reqData.ID); writeErr != nil {
 			w.WriteHeader(500)
-			fmt.Println("Error asynchronous writing request to storage ", sourceErr)
+			fmt.Println("Error asynchronous writing request to storage ", writeErr)
 			return
 		}
 		w.WriteHeader(http.StatusAccepted)
